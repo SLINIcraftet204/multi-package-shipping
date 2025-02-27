@@ -2,17 +2,28 @@
 
 namespace MultiPackageShipping\Subscriber;
 
+use Pickware\Shipping\Dhl\DhlAdapter;
+use Pickware\Shipping\Shipment\ShipmentService;
 use Shopware\Core\Checkout\Order\Event\CheckoutOrderPlacedEvent;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
+use Shopware\Core\Framework\Context;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Psr\Log\LoggerInterface;
 
 class OrderSubscriber implements EventSubscriberInterface
 {
     private EntityRepository $orderRepository;
+    private ShipmentService $shipmentService;
+    private LoggerInterface $logger;
 
-    public function __construct(EntityRepository $orderRepository)
-    {
+    public function __construct(
+        EntityRepository $orderRepository,
+        ShipmentService $shipmentService,
+        LoggerInterface $logger
+    ) {
         $this->orderRepository = $orderRepository;
+        $this->shipmentService = $shipmentService;
+        $this->logger = $logger;
     }
 
     public static function getSubscribedEvents(): array
@@ -26,6 +37,7 @@ class OrderSubscriber implements EventSubscriberInterface
     {
         $order = $event->getOrder();
         $lineItems = $order->getLineItems();
+        $context = Context::createDefaultContext();
         $maxWeight = 31.5;
         $currentPackageWeight = 0;
         $packages = [];
@@ -51,9 +63,26 @@ class OrderSubscriber implements EventSubscriberInterface
             $packages[] = $currentPackage;
         }
 
-        // Speichere die Paketinformationen (zum Debuggen)
+        $this->logger->info("Bestellung {$order->getOrderNumber()} wird in " . count($packages) . " Pakete aufgeteilt.");
+
         foreach ($packages as $index => $package) {
-            error_log("Paket " . ($index + 1) . " mit " . count($package) . " Artikeln.");
+            $packageWeight = array_sum(array_map(fn($item) => $item->getPayload()['weight'] ?? 0, $package));
+
+            // Pickware Versand über DHL
+            try {
+                $shipment = $this->shipmentService->createShipment(
+                    [
+                        'orderId' => $order->getId(),
+                        'carrier' => DhlAdapter::CARRIER_NAME,
+                        'weight' => $packageWeight,
+                        'context' => $context,
+                    ]
+                );
+
+                $this->logger->info("Paket " . ($index + 1) . " erfolgreich an DHL übergeben: " . json_encode($shipment));
+            } catch (\Exception $e) {
+                $this->logger->error("Fehler beim Erstellen des DHL Versands: " . $e->getMessage());
+            }
         }
     }
 }

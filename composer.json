@@ -11,7 +11,8 @@
     ],
     "require": {
         "shopware/core": "6.6.*",
-        "ext-curl": "*"
+        "ext-curl": "*",
+        "pickware/shipping-dhl": "^6.0"
     },
     "autoload": {
         "psr-4": {
@@ -21,8 +22,8 @@
     "extra": {
         "shopware-plugin-class": "MultiPackageShipping\\MultiPackageShipping",
         "label": {
-            "de-DE": "Multi Package Shipping",
-            "en-GB": "Multi Package Shipping"
+            "de-DE": "Multi Package Shipping (von Nils G.|SLINI)",
+            "en-GB": "Multi Package Shipping (by Nils G.|SLINI)"
         }
     }
 }
