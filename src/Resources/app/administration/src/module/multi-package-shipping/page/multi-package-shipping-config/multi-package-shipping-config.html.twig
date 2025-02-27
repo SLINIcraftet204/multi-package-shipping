@@ -1,0 +1,13 @@
+{% block sw_settings_index_base %}
+    <sw-card title="Multi Package Shipping">
+        <sw-container>
+            <sw-text-field
+                    label="Maximales Paketgewicht (kg)"
+                    v-model="maxPackageWeight"
+                    placeholder="31.5"
+                    type="number"
+                    step="0.1">
+            </sw-text-field>
+        </sw-container>
+    </sw-card>
+{% endblock %}

@@ -20,15 +20,16 @@ class ShipmentSubscriber implements EventSubscriberInterface
     private ConfigService $configService;
 
     public function __construct(
+        ConfigService $configService,
         EntityRepository $orderRepository,
         ShipmentService $shipmentService,
-        LoggerInterface $logger,
-        ConfigService $configService
+        LoggerInterface $logger
+
     ) {
+        $this->configService = $configService;
         $this->orderRepository = $orderRepository;
         $this->shipmentService = $shipmentService;
         $this->logger = $logger;
-        $this->configService = $configService;
     }
 
     public static function getSubscribedEvents(): array

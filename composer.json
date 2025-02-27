@@ -1,7 +1,7 @@
 {
     "name": "slinicraftet204/multi-package-shipping",
     "description": "Multi Package Shipping",
-    "version": "0.1.0",
+    "version": "0.1.5",
     "type": "shopware-platform-plugin",
     "license": "MIT",
     "authors": [

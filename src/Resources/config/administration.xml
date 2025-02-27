@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<administration>
+    <main-module name="multi-package-shipping">
+        <title>Multi Package Shipping</title>
+        <path>app/module</path>
+        <position>100</position>
+    </main-module>
+</administration>

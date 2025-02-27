@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/shopware/platform/master/src/Core/System/SystemConfig/Schema/config.xsd">
+    <card>
+        <title>Multi Package Shipping</title>
+        <input-field type="float">
+            <name>maxPackageWeight</name>
+            <label>Maximales Paketgewicht (kg)</label>
+            <placeholder>31.5</placeholder>
+            <helpText>Geben Sie das maximale Gewicht pro Paket ein (z. B. 31.5 kg).</helpText>
+        </input-field>
+    </card>
+</config>
