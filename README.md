@@ -3,6 +3,7 @@
 **Selfcoded Version of DHL Multishipping**: Integrates the feature to split larger orders automatically in Shopware with the Core Version 6.6.X.
 
 Known issues:
+* Menu is currently only from the extension page accessible
 * _to be continued..._
 
 ## Requirements
