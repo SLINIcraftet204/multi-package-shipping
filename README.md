@@ -10,7 +10,7 @@ Extensions that must be installed on the server and in shopware in order to make
 
 	"shopware/core": "6.6.*",
 	"ext-curl": "*",
-	"pickware/shipping-dhl": "^6.0"
+	"pickware/pickware-dhl": "^3.5.0"
 
 ## Version History
 | Version 	                                                                        | Requirements               	 |
