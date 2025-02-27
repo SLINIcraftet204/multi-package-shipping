@@ -1,5 +1,5 @@
 {
-    "name": "SLINIcraftet204/multi-package-shipping-shopware6-plugin",
+    "name": "slinicraftet204/multi-package-shipping",
     "description": "Multi Package Shipping",
     "version": "0.1.0",
     "type": "shopware-platform-plugin",
@@ -15,11 +15,11 @@
     },
     "autoload": {
         "psr-4": {
-            "SLINI\\MultiPackage\\": "src/"
+            "MultiPackageShipping\\": "src/"
         }
     },
     "extra": {
-        "shopware-plugin-class": "MultiPackageShipping",
+        "shopware-plugin-class": "MultiPackageShipping\\MultiPackageShipping",
         "label": {
             "de-DE": "Multi Package Shipping",
             "en-GB": "Multi Package Shipping"

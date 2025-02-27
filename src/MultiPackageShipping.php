@@ -1,6 +1,6 @@
 <?php
 
-namespace SLINI\MultiPackage;
+namespace MultiPackageShipping;
 
 use Shopware\Core\Framework\Plugin;
 

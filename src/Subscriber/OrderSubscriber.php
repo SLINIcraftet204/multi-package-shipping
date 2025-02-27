@@ -1,16 +1,14 @@
 <?php
 
-
 namespace MultiPackageShipping\Subscriber;
 
-use Shopware\Core\Checkout\Order\OrderEvents;
+use Shopware\Core\Checkout\Order\Event\CheckoutOrderPlacedEvent;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use Shopware\Core\Checkout\Order\Event\OrderPlacedEvent;
 
 class OrderSubscriber implements EventSubscriberInterface
 {
-    private $orderRepository;
+    private EntityRepository $orderRepository;
 
     public function __construct(EntityRepository $orderRepository)
     {
@@ -20,11 +18,11 @@ class OrderSubscriber implements EventSubscriberInterface
     public static function getSubscribedEvents(): array
     {
         return [
-            OrderEvents::ORDER_PLACED_EVENT => 'onOrderPlaced',
+            CheckoutOrderPlacedEvent::class => 'onOrderPlaced',
         ];
     }
 
-    public function onOrderPlaced(OrderPlacedEvent $event)
+    public function onOrderPlaced(CheckoutOrderPlacedEvent $event)
     {
         $order = $event->getOrder();
         $lineItems = $order->getLineItems();
@@ -53,9 +51,8 @@ class OrderSubscriber implements EventSubscriberInterface
             $packages[] = $currentPackage;
         }
 
-        // Speichere die Paketinformationen (dies kann später für den Versanddienstleister genutzt werden)
+        // Speichere die Paketinformationen (zum Debuggen)
         foreach ($packages as $index => $package) {
-            // Speichere das Paket z. B. in einer Bestell-Extension oder logge es
             error_log("Paket " . ($index + 1) . " mit " . count($package) . " Artikeln.");
         }
     }
