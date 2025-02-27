@@ -26,10 +26,10 @@ Extensions that must be installed on the server and in shopware in order to make
 	"pickware/pickware-dhl": "^3.5.0"
 
 ## Version History
-| Version 	                                                                        | Requirements               	 |
-|----------------------------------------------------------------------------------|------------------------------|
-| [0.1.0](https://github.com/SLINIcraftet204/multi-package-shipping/releases)    	 | Shopware 6.6 >=	             |
-| 0.2.0 (not planned yet)   	                                                      | Shopware 6.x >=	             |
+| Version 	                                                                                   | Requirements               	 |
+|---------------------------------------------------------------------------------------------|------------------------------|
+| [0.1.0](https://github.com/SLINIcraftet204/multi-package-shipping/releases/tag/v0.1.0)    	 | Shopware 6.6 >=	             |
+| [0.1.5](https://github.com/SLINIcraftet204/multi-package-shipping/releases/tag/v0.1.5)   	  | Shopware 6.6 >=	             |
 
 ## Logo
 
