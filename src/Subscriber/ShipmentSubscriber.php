@@ -8,6 +8,8 @@ use Psr\Log\LoggerInterface;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\Context;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use MultiPackageShipping\Service\ConfigService;
+
 
 class ShipmentSubscriber implements EventSubscriberInterface
 {
@@ -15,14 +17,18 @@ class ShipmentSubscriber implements EventSubscriberInterface
     private ShipmentService $shipmentService;
     private LoggerInterface $logger;
 
+    private ConfigService $configService;
+
     public function __construct(
         EntityRepository $orderRepository,
         ShipmentService $shipmentService,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        ConfigService $configService
     ) {
         $this->orderRepository = $orderRepository;
         $this->shipmentService = $shipmentService;
         $this->logger = $logger;
+        $this->configService = $configService;
     }
 
     public static function getSubscribedEvents(): array
@@ -30,6 +36,11 @@ class ShipmentSubscriber implements EventSubscriberInterface
         return [
             ShipmentsCreatedEvent::class => 'onShipmentCreated',
         ];
+    }
+
+    public function getMaxPackageWeight(): float
+    {
+        return $this->configService->getMaxPackageWeight();
     }
 
     public function onShipmentCreated(ShipmentsCreatedEvent $event)
@@ -72,13 +83,14 @@ class ShipmentSubscriber implements EventSubscriberInterface
 
     private function splitOrderIntoPackages($order)
     {
-        $maxWeight = 31.5;
+        $maxWeight = $this->getMaxPackageWeight();
         $currentWeight = 0;
         $packages = [];
         $lineItems = $order->getLineItems();
 
         foreach ($lineItems as $item) {
-            $weight = $item->getPayload()['weight'] ?? 0;
+            $payload = $item->getPayload();
+            $weight = isset($payload['weight']) ? (float) $payload['weight'] : 0;
             $quantity = $item->getQuantity();
 
             for ($i = 0; $i < $quantity; $i++) {
@@ -96,4 +108,5 @@ class ShipmentSubscriber implements EventSubscriberInterface
 
         return $packages;
     }
+
 }

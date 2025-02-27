@@ -6,7 +6,13 @@ Known issues:
 * _to be continued..._
 
 ## Requirements
+Extensions that must be installed on the server and in shopware in order to make this extension work
 
+	"shopware/core": "6.6.*",
+	"ext-curl": "*",
+	"pickware/shipping-dhl": "^6.0"
+
+## Version History
 | Version 	                                                                        | Requirements               	 |
 |----------------------------------------------------------------------------------|------------------------------|
 | [0.1.0](https://github.com/SLINIcraftet204/multi-package-shipping/releases)    	 | Shopware 6.6 >=	             |
