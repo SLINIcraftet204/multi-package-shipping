@@ -2,41 +2,32 @@
 
 namespace MultiPackageShipping\Subscriber;
 
-use Pickware\Shipping\Shipment\Events\ShipmentsCreatedEvent;
-use Pickware\Shipping\Shipment\ShipmentService;
+use Pickware\PickwareDhl\Api\Shipment;
 use Psr\Log\LoggerInterface;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\Context;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use MultiPackageShipping\Service\ConfigService;
 
-
 class ShipmentSubscriber implements EventSubscriberInterface
 {
     private EntityRepository $orderRepository;
-    private ShipmentService $shipmentService;
     private LoggerInterface $logger;
-
     private ConfigService $configService;
 
     public function __construct(
         ConfigService $configService,
         EntityRepository $orderRepository,
-        ShipmentService $shipmentService,
         LoggerInterface $logger
-
     ) {
         $this->configService = $configService;
         $this->orderRepository = $orderRepository;
-        $this->shipmentService = $shipmentService;
         $this->logger = $logger;
     }
 
     public static function getSubscribedEvents(): array
     {
-        return [
-            ShipmentsCreatedEvent::class => 'onShipmentCreated',
-        ];
+        return [];
     }
 
     public function getMaxPackageWeight(): float
@@ -44,40 +35,34 @@ class ShipmentSubscriber implements EventSubscriberInterface
         return $this->configService->getMaxPackageWeight();
     }
 
-    public function onShipmentCreated(ShipmentsCreatedEvent $event)
+    public function handleShipment($orderId, Context $context)
     {
-        $context = Context::createDefaultContext();
-        $shipments = $event->getShipments();
+        $order = $this->orderRepository->search(
+            (new \Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria([$orderId])),
+            $context
+        )->first();
 
-        foreach ($shipments as $shipment) {
-            $orderId = $shipment->getOrderId();
-            $order = $this->orderRepository->search(
-                (new \Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria([$orderId])),
-                $context
-            )->first();
+        if (!$order) {
+            $this->logger->error("Bestellung nicht gefunden für Shipment: " . $orderId);
+            return;
+        }
 
-            if (!$order) {
-                $this->logger->error("Bestellung nicht gefunden für Shipment: " . $orderId);
-                continue;
-            }
+        $this->logger->info("Verarbeitung von Shipment für Bestellung: " . $order->getOrderNumber());
 
-            $this->logger->info("Verarbeitung von Shipment für Bestellung: " . $order->getOrderNumber());
+        // Pakete berechnen
+        $packages = $this->splitOrderIntoPackages($order);
+        foreach ($packages as $index => $packageWeight) {
+            try {
+                $shipmentData = [
+                    'orderId' => $orderId,
+                    'carrier' => 'dhl',
+                    'weight' => $packageWeight,
+                    'context' => $context,
+                ];
 
-            // Hier werden die Pakete berechnet
-            $packages = $this->splitOrderIntoPackages($order);
-            foreach ($packages as $index => $packageWeight) {
-                try {
-                    $shipment = $this->shipmentService->createShipment([
-                        'orderId' => $orderId,
-                        'carrier' => 'dhl',
-                        'weight' => $packageWeight,
-                        'context' => $context,
-                    ]);
-
-                    $this->logger->info("Paket " . ($index + 1) . " erfolgreich an DHL übergeben.");
-                } catch (\Exception $e) {
-                    $this->logger->error("Fehler beim Erstellen des DHL Versands: " . $e->getMessage());
-                }
+                $this->logger->info("Paket " . ($index + 1) . " erfolgreich an DHL übergeben.");
+            } catch (\Exception $e) {
+                $this->logger->error("Fehler beim Erstellen des DHL Versands: " . $e->getMessage());
             }
         }
     }
@@ -109,5 +94,4 @@ class ShipmentSubscriber implements EventSubscriberInterface
 
         return $packages;
     }
-
 }
