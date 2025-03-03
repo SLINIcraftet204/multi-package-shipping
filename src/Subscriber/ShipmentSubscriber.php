@@ -2,96 +2,65 @@
 
 namespace MultiPackageShipping\Subscriber;
 
+use Pickware\PickwareDhl\Api\DhlAdapter;
 use Pickware\PickwareDhl\Api\Shipment;
-use Psr\Log\LoggerInterface;
-use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\Context;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use MultiPackageShipping\Service\ConfigService;
+use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
+use Psr\Log\LoggerInterface;
+use Shopware\Core\Checkout\Order\OrderEvents;
+use Shopware\Core\Framework\DataAbstractionLayer\Event\EntityWrittenEvent;
 
 class ShipmentSubscriber implements EventSubscriberInterface
 {
-    private EntityRepository $orderRepository;
+    private EntityRepository $shipmentRepository;
+    private DhlAdapter $dhlAdapter;
     private LoggerInterface $logger;
-    private ConfigService $configService;
 
     public function __construct(
-        ConfigService $configService,
-        EntityRepository $orderRepository,
+        EntityRepository $shipmentRepository,
+        DhlAdapter $dhlAdapter,
         LoggerInterface $logger
     ) {
-        $this->configService = $configService;
-        $this->orderRepository = $orderRepository;
+        $this->shipmentRepository = $shipmentRepository;
+        $this->dhlAdapter = $dhlAdapter;
         $this->logger = $logger;
     }
 
     public static function getSubscribedEvents(): array
     {
-        return [];
+        return [
+            OrderEvents::ORDER_DELIVERED => 'onOrderDelivered',
+        ];
     }
 
-    public function getMaxPackageWeight(): float
+    public function onOrderDelivered(EntityWrittenEvent $event): void
     {
-        return $this->configService->getMaxPackageWeight();
-    }
+        foreach ($event->getIds() as $orderId) {
+            $this->logger->info("Versandstatus aktualisiert für Bestellung: " . $orderId);
 
-    public function handleShipment($orderId, Context $context)
-    {
-        $order = $this->orderRepository->search(
-            (new \Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria([$orderId])),
-            $context
-        )->first();
+            $order = $this->shipmentRepository->search(
+                (new \Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria([$orderId])),
+                Context::createDefaultContext()
+            )->first();
 
-        if (!$order) {
-            $this->logger->error("Bestellung nicht gefunden für Shipment: " . $orderId);
-            return;
-        }
+            if (!$order) {
+                $this->logger->error("Bestellung nicht gefunden: " . $orderId);
+                continue;
+            }
 
-        $this->logger->info("Verarbeitung von Shipment für Bestellung: " . $order->getOrderNumber());
-
-        // Pakete berechnen
-        $packages = $this->splitOrderIntoPackages($order);
-        foreach ($packages as $index => $packageWeight) {
             try {
                 $shipmentData = [
-                    'orderId' => $orderId,
-                    'carrier' => 'dhl',
-                    'weight' => $packageWeight,
-                    'context' => $context,
+                    'shipmentId' => $order->getCustomFields()['shipment_id'] ?? null,
+                    'status' => 'delivered',
                 ];
 
-                $this->logger->info("Paket " . ($index + 1) . " erfolgreich an DHL übergeben.");
+                $this->dhlAdapter->updateShipment(new Shipment($shipmentData));
+
+                $this->logger->info("DHL-Versandstatus für Bestellung " . $orderId . " aktualisiert.");
             } catch (\Exception $e) {
-                $this->logger->error("Fehler beim Erstellen des DHL Versands: " . $e->getMessage());
+                $this->logger->error("Fehler beim Aktualisieren des DHL-Versandstatus: " . $e->getMessage());
             }
         }
-    }
-
-    private function splitOrderIntoPackages($order)
-    {
-        $maxWeight = $this->getMaxPackageWeight();
-        $currentWeight = 0;
-        $packages = [];
-        $lineItems = $order->getLineItems();
-
-        foreach ($lineItems as $item) {
-            $payload = $item->getPayload();
-            $weight = isset($payload['weight']) ? (float) $payload['weight'] : 0;
-            $quantity = $item->getQuantity();
-
-            for ($i = 0; $i < $quantity; $i++) {
-                if ($currentWeight + $weight > $maxWeight) {
-                    $packages[] = $currentWeight;
-                    $currentWeight = 0;
-                }
-                $currentWeight += $weight;
-            }
-        }
-
-        if ($currentWeight > 0) {
-            $packages[] = $currentWeight;
-        }
-
-        return $packages;
     }
 }

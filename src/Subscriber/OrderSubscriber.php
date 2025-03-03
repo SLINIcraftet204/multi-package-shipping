@@ -4,8 +4,6 @@ namespace MultiPackageShipping\Subscriber;
 
 use Pickware\PickwareDhl\Api\DhlAdapter;
 use Pickware\PickwareDhl\Api\Shipment;
-use Pickware\ShippingBundle\Shipment\Address;
-use Pickware\ShippingBundle\Parcel\Parcel;
 use Shopware\Core\Framework\Context;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
@@ -39,7 +37,7 @@ class OrderSubscriber implements EventSubscriberInterface
         ];
     }
 
-    public function onOrderPlaced(CheckoutOrderPlacedEvent $event)
+    public function onOrderPlaced(CheckoutOrderPlacedEvent $event): void
     {
         $context = $event->getContext();
         $orderId = $event->getOrderId();
@@ -60,19 +58,18 @@ class OrderSubscriber implements EventSubscriberInterface
         $packages = $this->splitOrderIntoPackages($order);
         foreach ($packages as $index => $packageWeight) {
             try {
-                $shipment = new Shipment(
-                    new Address(
-                        $order->getBillingAddress()->getFirstName(),
-                        $order->getBillingAddress()->getLastName(),
-                        $order->getBillingAddress()->getStreet(),
-                        $order->getBillingAddress()->getZipcode(),
-                        $order->getBillingAddress()->getCity(),
-                        $order->getBillingAddress()->getCountry()->getIso()
-                    ),
-                    new Parcel($packageWeight)
-                );
+                $shipmentData = [
+                    'recipient' => [
+                        'name' => $order->getBillingAddress()->getFirstName() . ' ' . $order->getBillingAddress()->getLastName(),
+                        'street' => $order->getBillingAddress()->getStreet(),
+                        'zipcode' => $order->getBillingAddress()->getZipcode(),
+                        'city' => $order->getBillingAddress()->getCity(),
+                        'country' => $order->getBillingAddress()->getCountry()->getIso(),
+                    ],
+                    'weight' => $packageWeight,
+                ];
 
-                $this->dhlAdapter->createShipment($shipment);
+                $this->dhlAdapter->createShipment(new Shipment($shipmentData));
 
                 $this->logger->info("DHL-Label für Paket " . ($index + 1) . " erstellt.");
             } catch (\Exception $e) {
@@ -81,7 +78,7 @@ class OrderSubscriber implements EventSubscriberInterface
         }
     }
 
-    private function splitOrderIntoPackages($order)
+    private function splitOrderIntoPackages($order): array
     {
         $maxWeight = $this->configService->getMaxPackageWeight();
         $currentWeight = 0;
